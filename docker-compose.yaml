@@ -60,6 +60,18 @@ services:
     links:
       - transmission
 
+  noip:
+    image: linuxserver/duckdns
+    container_name: duckdns
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      - SUBDOMAINS=deptocordoba
+      - TOKEN=${DUCKDNS_TOKEN}
+      - LOG_FILE=false
+    restart: always
+
+
+
 networks:
   lan:
     driver: macvlan
