@@ -3,7 +3,7 @@ MAINTAINER bren
 
 RUN apk add --update \
   tzdata \
-  python3 \
+  python3.8 \
   py3-pip \
   ca-certificates \
   && pip3 install --no-cache-dir --disable-pip-version-check flexget transmissionrpc subliminal>=2.0 \
