@@ -132,7 +132,7 @@ tasks:
     priority: 1
     filesystem:
       path:
-        - /downloads/complete         # unix
+        - /data/complete         # unix
       regexp: '.*\.(avi|mkv|mp4)$'  # only include filenames with these extensions
       recursive: yes
     accept_all: yes
@@ -146,7 +146,7 @@ tasks:
         - ger
       exact_match: yes
       #only use the following providers
-      providers: [opensubtitles,argenteam]
+      providers: [opensubtitles,addic7ed]
       single: no
       hearing_impaired: yes
       authentication:               #consider using the variables plugin
@@ -226,7 +226,7 @@ tasks:
     parsing:
       series: guessit
     filesystem:
-      path: /downloads/complete
+      path: /data/complete
       regexp: '.*\.(avi|mkv|mp4)$'
       recursive: yes
     accept_all: yes
@@ -247,7 +247,7 @@ tasks:
     priority: 2
     no_entries_ok: yes
     filesystem:
-      path: /downloads/complete
+      path: /data/complete
       regexp: '.*\.(avi|mkv|mp4)$'
       recursive: yes
     accept_all: yes
