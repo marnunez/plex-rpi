@@ -50,6 +50,7 @@ services:
   flexget:
     build: flexget-arm
     volumes:
+      - /etc/timezone:/etc/timezone
       - ./flexget:/config
       - ${STORAGE}/torrents:/downloads
       - ${MEDIA}:/storage
