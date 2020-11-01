@@ -63,8 +63,7 @@ templates:
             <<: *trakt_tv_list
           settings:
             exact: no
-            target: 1080p hdtv+
-            quality: 1080p webrip+
+            quality: 1080p hdtv+
             propers: 2 days
             identified_by: ep
 
@@ -78,7 +77,7 @@ templates:
     quality: 1080p+ webdl+
     list_match:
       from:
-        - movie_list: lista-pelis
+        - movie_list: '{? trakt.movie_list ?}'
 
 tasks:
 
@@ -89,8 +88,7 @@ tasks:
       - tv-settings
     discover:
       what:
-        - next_series_episodes:
-            backfill: yes
+        - next_series_episodes: yes
 
       from:
         - search_rss:
@@ -107,7 +105,7 @@ tasks:
       - movie-settings
     discover:
       what:
-        - movie_list: lista-pelis
+        - movie_list:  '{? trakt.movie_list ?}'
       from:
         - rarbg:
             category:
