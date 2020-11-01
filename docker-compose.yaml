@@ -32,17 +32,19 @@ services:
         ipv4_address: 192.168.0.3
 
   transmission:
-    image : jaymoulin/transmission
-    command: transmission-daemon -f -g /config
+    image: linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
     volumes:
-      - ./transmission:/config
+      - .transmission:/config
       - ${STORAGE}/torrents:/downloads
     ports:
       - 9091:9091
       - 51413:51413
       - 51413:51413/udp
-    expose:
-      - 9091
     restart: unless-stopped
 
   flexget:
