@@ -37,7 +37,6 @@ services:
     environment:
       - PUID=1001
       - PGID=1001
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
     volumes:
       - .transmission:/config
       - ${STORAGE}/torrents:/downloads
