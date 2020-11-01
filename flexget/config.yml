@@ -59,6 +59,13 @@ templates:
     if:
       - trakt_watched: reject
 
+  content-rejects:
+    content_filter:
+      reject:
+        - 'password.txt'
+        - '*.wmv'
+        - '*.avi'
+
   tv-settings:
     <<: *tv_lookup
     content_size:
