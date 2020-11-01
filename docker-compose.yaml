@@ -47,7 +47,7 @@ services:
     restart: unless-stopped
 
   flexget:
-    build: wiserain/flexget
+    image: wiserain/flexget
     volumes:
       - ./flexget:/config
       - ${STORAGE}/torrents:/data
