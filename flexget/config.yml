@@ -1,37 +1,190 @@
-web_server: yes
+variables: variables.yml
 
-schedules:
-  - tasks: '*'
-    interval:
-      minutes: 30
+### Templates
 
 templates:
-  tv:
-    regexp:
-      reject:
-        - x265: {from: title}
-    series:
-      settings:
-        tv:
-          exact: yes
-          propers: 12 hours
-          quality: 1080p
-      tv:
-      - Black Mirror
-      - Westworld
-
-    transmission:
+  anchors:
+    _transmission: &transmission
       host: transmission
       port: 9091
-      username: admin
-      password: "123456"
+      username: '{? transmission.username ?}'
+      password: '{? transmission.password ?}'
+
+    _eztv_credentials : &eztv_credentials
+      url: https://eztv.ag/ezrss.xml
+      other_fields: ['torrent:magnetURI']
+      link: 'torrent:magnetURI'
+      escape: yes
+
+    _trakt_credentials: &trakt_credentials
+      username: '{? trakt.username ?}'
+      account: '{? trakt.account ?}'
+
+    _movie_lookup: &movie_lookup
+      imdb_lookup: yes
+      tmdb_lookup: yes
+
+    _tv_lookup: &tv_lookup
+      thetvdb_lookup: yes
+      trakt_lookup:
+        <<: *trakt_credentials
+
+  trakt_tv_list: &trakt_tv_list
+    trakt_list:
+      <<: *trakt_credentials
+      list: '{? trakt.tv_list ?}'
+      type: shows
+
+  trakt_movie_list: &trakt_movie_list
+    trakt_list:
+      <<: *trakt_credentials
+      list: '{? trakt.movie_list ?}'
+      type: movies
+
+  global-settings:
+    transmission:
+      <<: *transmission
+    free_space:
+      path: /storage
+      space: 20000
+    pathscrub: windows
+    include: reject.yml
+    sort_by:
+      field: quality
+      reverse: yes
+    trakt_lookup:
+      <<: *trakt_credentials
+    if:
+      - trakt_collected: reject
+      - trakt_watched: reject
+
+  tv-settings:
+    <<: *tv_lookup
+    content_size:
+      max: 10000
+      min: 500
+    sequence:
+      - configure_series:
+          from:
+            <<: *trakt_tv_list
+          settings:
+            exact: no
+            target: 1080p hdtv+
+            quality: 1080p webrip+
+            propers: 2 days
+            identified_by: ep
+
+  movie-settings:
+    <<: *movie_lookup
+    proper_movies: no
+    content_size:
+      min: 8000
+      max: 80000
+      strict: no
+    quality: 1080p+ webdl+
+    list_match:
+      from:
+        - movie_list: Movies
 
 tasks:
-  eztvrss:
-    rss: https://eztv.ag/ezrss.xml
-    template: tv
-    priority: 2
-  sort_tv:
+
+  search-tv:
+    priority: 10
+    template:
+      - global-settings
+      - tv-settings
+    discover:
+      what:
+        - next_series_episodes: yes
+      from:
+        - search_rss:
+          <<: *eztv_credentials
+      interval: 3 hours
+
+  search-movies:
+    priority: 20
+    template:
+      - global-settings
+      - movie-settings
+    discover:
+      release_estimations: loose
+      what:
+        - movie_list: Movies
+      from:
+        - rarbg:
+            category:
+              - x264 1080p
+      interval: 6 hours
+
+  trakt-update-movie-queue:
+    priority: 10
+    <<: *movie_lookup
+    template: trakt_movie_list
+    accept_all: yes
+    list_add:
+      - movie_list: "{? trakt.movie_list ?}"
+    no_entries_ok: yes
+    seen: local
+
+  trakt-fill-tv-list:
+    priority: 20
+    trakt_list:
+      <<: *trakt_credentials
+      list: "{? trakt.tv_list ?}"
+      type: episodes
+      strip_dates: yes
+    accept_all: yes
+    set_series_begin: yes
+    list_remove:
+      - trakt_list:
+          <<: *trakt_credentials
+          list: "{? trakt.tv_list ?}"
+          type: episodes
+    list_add:
+      - trakt_list:
+          <<: *trakt_credentials
+          list: "{? trakt.tv_list ?}"
+          type: shows
+    no_entries_ok: yes
+    seen: local
+
+  trakt-cleanup-tv-list:
+    priority: 30
+    template: trakt_tv_list
+    <<: *tv_lookup
+    disable: seen
+    if:
+      - trakt_series_status in ['ended', 'canceled']: accept
+    list_remove:
+      - <<: *trakt_tv_list
+    no_entries_ok: yes
+
+  trakt-cleanup-movie-list:
+    priority: 30
+    trakt_lookup:
+      <<: *trakt_credentials
+    template: trakt_movie_list
+    disable: seen
+    if:
+      - trakt_collected: accept
+    list_remove:
+      - <<: *trakt_movie_list
+    no_entries_ok: yes
+
+  cleanup-torrents:
+    priority: 40
+    from_transmission:
+      <<: *transmission
+    disable: [seen, seen_info_hash]
+    if:
+      - transmission_progress == 100: accept
+      - "transmission_ratio < 1.0 and transmission_date_done > now - timedelta(days=15)": reject
+    transmission:
+      <<: *transmission
+      action: purge
+    no_entries_ok: yes
+
+  sort-tv:
     priority: 2
     no_entries_ok: yes
     parsing:
@@ -50,11 +203,11 @@ tasks:
       on_output:
         for_entries: |
           if mediainfo "{{ location }}" | grep EAC3; then
-            mkdir -p "/storage/series/{{ tvdb_series_name }}/Season {{ series_season }}" && ffmpeg -hwaccel auto -y -i "{{ location }}" -map 0 -c:s copy -c:v copy -c:a ac3 -b:a 640k "/storage/series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
+            mkdir -p "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}" && ffmpeg -hwaccel auto -y -i "{{ location }}" -map 0 -c:s copy -c:v copy -c:a ac3 -b:a 640k "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
           else
-            mkdir -p "/storage/series/{{ tvdb_series_name }}/Season {{ series_season }}" && cp "{{ location }}" "/storage/series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
+            mkdir -p "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}" && cp "{{ location }}" "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
           fi
-  sort_movies:
+ sort-movies:
     priority: 2
     no_entries_ok: yes
     filesystem:
@@ -69,24 +222,15 @@ tasks:
       on_output:
        for_entries: |
          if mediainfo "{{ location }}" | grep EAC3; then
-           mkdir -p "/storage/pelis/{{ movie_name }} ({{ movie_year }})" && ffmpeg -hwaccel auto -y -i "{{ location }}" -map 0 -c:s copy -c:v copy -c:a ac3 -b:a 640k "/storage/pelis/{{ movie_name }} ({{ movie_year }})/{{ movie_name }} ({{ movie_year }}){{ location | pathext }}"
+           mkdir -p "/storage/Películas/{{ movie_name }} ({{ movie_year }})" && ffmpeg -hwaccel auto -y -i "{{ location }}" -map 0 -c:s copy -c:v copy -c:a ac3 -b:a 640k "/storage/Películas/{{ movie_name }} ({{ movie_year }})/{{ movie_name }} ({{ movie_year }}){{ location | pathext }}"
          else
-           mkdir -p "/storage/pelis/{{ movie_name }} ({{ movie_year }})" && cp "{{ location }}" "/storage/pelis/{{ movie_name }} ({{ movie_year }})/{{ movie_name }} ({{ movie_year }}){{ location | pathext }}"
+           mkdir -p "/storage/Películas/{{ movie_name }} ({{ movie_year }})" && cp "{{ location }}" "/storage/Películas/{{ movie_name }} ({{ movie_year }})/{{ movie_name }} ({{ movie_year }}){{ location | pathext }}"
          fi
-  remove_stale_torrents:
-    from_transmission:
-      host: transmission
-      port: 9091
-      username: admin
-      password: "123456"
-    disable: [seen, seen_info_hash]
-    if:
-      - transmission_progress == 100: accept
-      - not transmission_seed_ratio_ok: reject
-      - not transmission_idle_limit_ok: reject
-    transmission:
-      host: transmission
-      port: 9091
-      username: admin
-      password: "123456"
-      action: purge
+
+schedules:
+  - tasks: ['search-*','sort-*']
+    interval:
+      hours: 6
+  - tasks: ['trakt-*', 'cleanup-*']
+    interval:
+      hours: 12
