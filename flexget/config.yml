@@ -49,7 +49,6 @@ templates:
     trakt_lookup:
       <<: *trakt_credentials
     if:
-      - trakt_collected: reject
       - trakt_watched: reject
 
   tv-settings:
@@ -77,7 +76,7 @@ templates:
     quality: 1080p+ webdl+
     list_match:
       from:
-        - movie_list: '{? trakt.movie_list ?}'
+        - movie_list: pelis
 
 tasks:
 
@@ -88,11 +87,7 @@ tasks:
       - tv-settings
     discover:
       what:
-        - next_trakt_episodes:
-            <<: *trakt_credentials
-            context: watched
-            list: '{? trakt.tv_list ?}'
-            strip_dates: yes
+        - next_series_episodes: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
@@ -115,7 +110,7 @@ tasks:
       - movie-settings
     discover:
       what:
-        - movie_list:  '{? trakt.movie_list ?}'
+        - movie_list: pelis
       from:
         - rarbg:
             category:
