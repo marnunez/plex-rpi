@@ -68,7 +68,6 @@ templates:
       from:
         <<: *trakt_tv_list
       settings:
-        exact: no
         quality: 1080p hdtv+
         propers: 2 days
         identified_by: ep
@@ -86,20 +85,39 @@ templates:
         - movie_list: pelis
 
 tasks:
+  series-trakt-set-begin:
+    priority: 1
+    list_clear:
+      what:
+        - entry_list: trakt-shows
+      phase: start
+    next_trakt_episodes:
+      <<: *trakt-credentials
+      list: lista-series
+      strip_dates: yes
+      context: collected
+      position: next
+    accept_all: yes
+    set_series_begin: yes
+    set:
+      title: "{{series_name | re_replace('[\\'\\.,\\:!]', '')}}"
+    disable: seen
+    list_add:
+      - entry_list: trakt-shows
 
-  search-tv:
-    priority: 10
-    template:
-      - global-settings
-      - tv-settings
+  series-discover:
+    priority: 100
+    template: content-rejects
+    configure_series:
+      from:
+        entry_list: trakt-shows
+      settings:
+        quality: 720p+
+        identified_by: ep
+        exact: yes
     discover:
       what:
-        - next_trakt_episodes:
-            context: watched
-            position: next
-            strip_dates: yes
-            list: '{? trakt.tv_list ?}'
-            <<: *trakt_credentials
+        - next_series_episodes: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
@@ -113,7 +131,7 @@ tasks:
             category: video
             sort_by: leechers
             url: https://piratebaymirror.eu
-      interval: 3 hours
+      interval: 30 minutes
 
   search-movies:
     priority: 20
