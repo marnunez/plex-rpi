@@ -14,6 +14,14 @@ templates:
       username: '{? trakt.username ?}'
       account: '{? trakt.account ?}'
 
+    _addic7ed_credentials: &addic7ed_credentials
+      username: '{? addic7ed.username ?}'
+      password: '{? addic7ed.password ?}'
+
+    _opensubtitles: &addic7ed_credentials
+      username: '{? opensubtitles.username ?}'
+      password: '{? opensubtitles.password ?}'
+
     _movie_lookup: &movie_lookup
       imdb_lookup: yes
       tmdb_lookup: yes
@@ -120,6 +128,31 @@ tasks:
             url: https://piratebaymirror.eu
       interval: 6 hours
 
+  get-subtitles:
+    filesystem:
+      path:
+        - /storage         # unix
+      regexp: '.*\.(avi|mkv|mp4)$'  # only include filenames with these extensions
+      recursive: yes
+    accept_all: yes
+    seen: local                     # seen shouldn't interfer with anything outside this subtitles task
+    subliminal:
+      languages:
+        - eng
+        - spa
+      alternatives:
+        - fre
+        - ger
+      exact_match: yes
+      #only use the following providers
+      providers: [addic7ed, opensubtitles]
+      single: no
+      hearing_impaired: yes
+      authentication:               #consider using the variables plugin
+        addic7ed:
+          <<: *addic7ed_credentials
+        opensubtitles:
+          <<: *opensubtitles_credentials
   trakt-update-movie-queue:
     priority: 10
     <<: *movie_lookup
