@@ -56,15 +56,14 @@ templates:
     content_size:
       max: 10000
       min: 500
-    sequence:
-      - configure_series:
-          from:
-            <<: *trakt_tv_list
-          settings:
-            exact: no
-            quality: 1080p hdtv+
-            propers: 2 days
-            identified_by: ep
+    configure_series:
+      from:
+        <<: *trakt_tv_list
+      settings:
+        exact: no
+        quality: 1080p hdtv+
+        propers: 2 days
+        identified_by: ep
 
   movie-settings:
     <<: *movie_lookup
@@ -88,6 +87,7 @@ tasks:
     discover:
       what:
         - next_series_episodes: yes
+            from_start: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
