@@ -207,7 +207,7 @@ tasks:
           else
             mkdir -p "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}" && cp "{{ location }}" "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
           fi
- sort-movies:
+  sort-movies:
     priority: 2
     no_entries_ok: yes
     filesystem:
