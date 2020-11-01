@@ -33,10 +33,10 @@ templates:
       to: '/storage/tmp/'
 
     _movies_path: &movies-path
-      to: '/storage/media/Películas/'
+      to: '/storage/Películas/'
 
     _series_path: &series-path
-      to: '/storage/media/Series/{{series_name}}/Season {{series_season}}/'
+      to: '/storage/Series/{{series_name}}/Season {{series_season}}/'
 
     # credentials anchors
     _trakt_credentials: &trakt-credentials
