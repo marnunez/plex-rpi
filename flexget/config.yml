@@ -95,6 +95,9 @@ tasks:
     discover:
       what:
         - next_trakt_episodes:
+            context: watched
+            position: next
+            strip_dates: yes
             list: '{? trakt.tv_list ?}'
             <<: *trakt_credentials
       from:
