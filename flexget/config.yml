@@ -87,7 +87,6 @@ tasks:
     discover:
       what:
         - next_series_episodes: yes
-            from_start: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
