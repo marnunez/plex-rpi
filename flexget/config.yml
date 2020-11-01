@@ -88,8 +88,12 @@ tasks:
       - tv-settings
     discover:
       what:
-        - next_series_episodes: yes
-
+        - next_trakt_episodes:
+            <<: *trakt_credentials
+            context: watched
+            list: '{? trakt.tv_list ?}'
+            accept_all: yes
+            set_series_begin: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
