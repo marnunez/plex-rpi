@@ -129,6 +129,7 @@ tasks:
       interval: 6 hours
 
   get-subtitles:
+    priority: 1
     filesystem:
       path:
         - /storage         # unix
