@@ -107,7 +107,6 @@ tasks:
       - global-settings
       - movie-settings
     discover:
-      release_estimations: loose
       what:
         - movie_list: Movies
       from:
