@@ -92,6 +92,7 @@ tasks:
             <<: *trakt_credentials
             context: watched
             list: '{? trakt.tv_list ?}'
+            strip_dates: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
