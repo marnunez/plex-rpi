@@ -94,7 +94,8 @@ tasks:
       - tv-settings
     discover:
       what:
-        - next_series_episodes: yes
+        - next_series_episodes:
+            from_start: yes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
