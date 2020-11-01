@@ -132,7 +132,7 @@ tasks:
     priority: 1
     filesystem:
       path:
-        - /storage         # unix
+        - /downloads/complete         # unix
       regexp: '.*\.(avi|mkv|mp4)$'  # only include filenames with these extensions
       recursive: yes
     accept_all: yes
