@@ -94,9 +94,9 @@ tasks:
       - tv-settings
     discover:
       what:
-        next_trakt_episodes:
-          list: '{? trakt.tv_list ?}'
-          <<: *trakt_credentials
+        - next_trakt_episodes:
+            list: '{? trakt.tv_list ?}'
+            <<: *trakt_credentials
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
