@@ -95,7 +95,7 @@ tasks:
       <<: *trakt_credentials
       list: lista-series
       strip_dates: yes
-      context: collected
+      context: watched
       position: next
     accept_all: yes
     set_series_begin: yes
