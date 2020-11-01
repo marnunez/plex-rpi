@@ -62,7 +62,7 @@ services:
     links:
       - transmission
 
-  noip:
+  duckdns:
     image: linuxserver/duckdns
     container_name: duckdns
     environment:
