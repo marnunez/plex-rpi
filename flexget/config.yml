@@ -90,7 +90,6 @@ tasks:
     discover:
       what:
         - next_series_episodes:
-            from_start: yes
             backfill: yes
 
       from:
