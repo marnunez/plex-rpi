@@ -78,7 +78,7 @@ templates:
     quality: 1080p+ webdl+
     list_match:
       from:
-        - movie_list: Movies
+        - movie_list: lista-pelis
 
 tasks:
 
@@ -108,7 +108,7 @@ tasks:
       - movie-settings
     discover:
       what:
-        - movie_list: Movies
+        - movie_list: lista-pelis
       from:
         - rarbg:
             category:
