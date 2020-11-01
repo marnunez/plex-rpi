@@ -25,12 +25,12 @@ templates:
       recursive: yes
 
     _fs_base_tv_temp: &fs-base-tv-temp
-      path: '/stor_tmp/'
+      path: '/stor_temp/'
       recursive: yes
 
     # filesystem "to" anchors
     _tv_temp_path: &tv-temp-path
-      to: '/stor_tmp/'
+      to: '/stor_temp/'
 
     _movies_path: &movies-path
       to: '/storage/Películas/'
