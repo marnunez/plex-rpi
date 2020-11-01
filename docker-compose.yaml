@@ -47,17 +47,20 @@ services:
     restart: unless-stopped
 
   flexget:
-    build: flexget-arm
+    build: wiserain/flexget
     volumes:
-      - /etc/timezone:/etc/timezone
       - ./flexget:/config
-      - ${STORAGE}/torrents:/downloads
+      - ${STORAGE}/torrents:/data
       - ${MEDIA}:/storage
     ports:
       - 5050:5050
     environment:
       - TORRENT_PLUGIN=transmission
+      - TZ=America/Argentina/Buenos_Aires
       - FG_WEBUI_PASSWD=trans123456
+      - FG_LOG_LEVEL=info
+      - PUID=1001
+      - PGID=1001
     restart: unless-stopped
     links:
       - transmission
