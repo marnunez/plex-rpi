@@ -99,6 +99,13 @@ tasks:
             other_fields: ['torrent:magnetURI']
             link: 'torrent:magnetURI'
             escape: yes
+        - rarbg:
+            category:
+              - x264 1080p
+        - piratebay:
+            category: video
+            sort_by: leechers
+            url: https://piratebaymirror.eu
       interval: 3 hours
 
   search-movies:
