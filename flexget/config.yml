@@ -146,7 +146,7 @@ tasks:
         - ger
       exact_match: yes
       #only use the following providers
-      providers: [opensubtitles,addic7ed]
+      providers: [opensubtitles]
       single: no
       hearing_impaired: yes
       authentication:               #consider using the variables plugin
