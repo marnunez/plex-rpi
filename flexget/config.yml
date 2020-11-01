@@ -10,12 +10,6 @@ templates:
       username: '{? transmission.username ?}'
       password: '{? transmission.password ?}'
 
-    _eztv_credentials : &eztv_credentials
-      url: https://eztv.ag/ezrss.xml
-      other_fields: ['torrent:magnetURI']
-      link: 'torrent:magnetURI'
-      escape: yes
-
     _trakt_credentials: &trakt_credentials
       username: '{? trakt.username ?}'
       account: '{? trakt.account ?}'
@@ -98,7 +92,10 @@ tasks:
         - next_series_episodes: yes
       from:
         - search_rss:
-          <<: *eztv_credentials
+            url: https://eztv.ag/ezrss.xml
+            other_fields: ['torrent:magnetURI']
+            link: 'torrent:magnetURI'
+            escape: yes
       interval: 3 hours
 
   search-movies:
