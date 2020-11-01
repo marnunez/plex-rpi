@@ -6,7 +6,7 @@ RUN apk add --update \
   python \
   py-pip \
   ca-certificates \
-  && pip install --no-cache-dir --disable-pip-version-check flexget==2.21.0 transmissionrpc==0.11 \
+  && pip install --no-cache-dir --disable-pip-version-check flexget==2.21.0 transmissionrpc==0.11 subliminal>=2.0 \
   && rm -rf /var/cache/apk/*
 
 RUN apk add --update --repository http://dl-cdn.alpinelinux.org/alpine/edge/main tinyxml2 && \
