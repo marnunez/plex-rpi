@@ -50,8 +50,9 @@ services:
     image: wiserain/flexget
     volumes:
       - ./flexget:/config
-      - ${STORAGE}/torrents:/data
+      - ${STORAGE}/torrents:/torrents
       - ${MEDIA}:/storage
+      - ${STORAGE}/tmp:/stor_temp
     ports:
       - 5050:5050
     environment:
