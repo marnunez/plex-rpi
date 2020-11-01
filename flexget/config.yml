@@ -156,7 +156,7 @@ tasks:
       from:
         entry_list: trakt-shows
       settings:
-        quality: 1080p+
+        quality: 1080p
         identified_by: ep
         exact: yes
     discover:
