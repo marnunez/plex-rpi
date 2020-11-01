@@ -17,11 +17,11 @@ templates:
 
     # filesystem "from" achors
     _fs_base_movies: &fs-base-movies
-      path: '/downloads/movies/'
+      path: '/data/movies/'
       recursive: yes
 
     _fs_base_tv: &fs-base-tv
-      path: '/downloads/tv/'
+      path: '/data/tv/'
       recursive: yes
 
     _fs_base_tv_temp: &fs-base-tv-temp
@@ -179,7 +179,7 @@ tasks:
     transmission:
       <<: *transmission
       ratio: 5
-      path: '/downloads/tv/'
+      path: '/data/tv/'
 
   # Extract then move archive contents separately. Workaround because the people who
   # post DC shows on iptorrents like to make "jokes" with their file names
@@ -272,7 +272,7 @@ tasks:
     transmission:
       <<: *transmission
       ratio: 5
-      path: '/downloads/movies/'
+      path: '/data/movies/'
 
   # Copy or decompress movies
   movies-file-decompress:
