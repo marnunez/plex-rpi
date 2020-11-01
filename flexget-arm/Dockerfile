@@ -1,12 +1,11 @@
-FROM armhf/alpine
-MAINTAINER bren
+FROM alpine:latest
 
 RUN apk add --update \
   tzdata \
-  python3.8 \
+  python3 \
   py3-pip \
   ca-certificates \
-  && pip3 install --no-cache-dir --disable-pip-version-check flexget transmissionrpc subliminal>=2.0 \
+  && pip3 install --no-cache-dir flexget transmissionrpc subliminal>=2.0 --ignore-installed six \
   && rm -rf /var/cache/apk/*
 
 RUN apk add --update --repository http://dl-cdn.alpinelinux.org/alpine/edge/main tinyxml2 && \
