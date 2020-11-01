@@ -1,64 +1,82 @@
 variables: variables.yml
 
-### Templates
-
 templates:
+  ####################
+  # YAML anchors.
+  ####################
+
+  # This takes advantage of the fact that flexget doesn't validate anything prefixed with an underscore
   anchors:
+    # anchor for tranmission config so it can be used with both transmission and clean_transmission
     _transmission: &transmission
-      host: transmission
+      enabled: yes
+      host: '{? transmission.host ?}'
       port: 9091
-      username: '{? transmission.username ?}'
-      password: '{? transmission.password ?}'
+      username: '{? transmission.username  ?}'
+      password: '{? transmission.password  ?}'
 
-    _trakt_credentials: &trakt_credentials
-      username: '{? trakt.username ?}'
-      account: '{? trakt.account ?}'
+    # filesystem "from" achors
+    _fs_base_movies: &fs-base-movies
+      path: '/downloads/movies/'
+      recursive: yes
 
-    _addic7ed_credentials: &addic7ed_credentials
-      username: '{? addic7ed.username ?}'
-      password: '{? addic7ed.password ?}'
+    _fs_base_tv: &fs-base-tv
+      path: '/downloads/tv/'
+      recursive: yes
 
-    _opensubtitles: &opensubtitles_credentials
-      username: '{? opensubtitles.username ?}'
-      password: '{? opensubtitles.password ?}'
+    _fs_base_tv_temp: &fs-base-tv-temp
+      path: '/storage/tmp/'
+      recursive: yes
 
-    _movie_lookup: &movie_lookup
-      imdb_lookup: yes
-      tmdb_lookup: yes
+    # filesystem "to" anchors
+    _tv_temp_path: &tv-temp-path
+      to: '/storage/tmp/'
 
-    _tv_lookup: &tv_lookup
-      thetvdb_lookup: yes
-      trakt_lookup:
-        <<: *trakt_credentials
+    _movies_path: &movies-path
+      to: '/storage/Películas/'
 
-  trakt_tv_list: &trakt_tv_list
+    _series_path: &series-path
+      to: '/storage/Series/{{series_name}}/Season {{series_season}}/'
+
+    # credentials anchors
+    _trakt_credentials: &trakt-credentials
+        username: '{? trakt.username ?}'
+        account: '{? trakt.account ?}'
+
+    # misc regexes
+    _archive_regex: &archive-regex
+      regexp: '.*\.(rar|r0+[01]|zip|part0+[01])$'
+
+    _video_regex: &video-regex
+      regexp: '.*\.(mkv|avi|mp4|mpg|mov|m4v)$'
+
+    _fs_rejects: &fs-rejects
+      regexp:
+        reject:
+          - sample
+          - tailer
+          - preview
+
+  # Trakt templates
+  # These first two are useful both as full templates and as anchors
+  series-trakt-list: &series-trakt-list
     trakt_list:
-      <<: *trakt_credentials
-      list: '{? trakt.tv_list ?}'
+      <<: *trakt-credentials
+      list: lista-series
       type: shows
+      strip_dates: yes
 
-  trakt_movie_list: &trakt_movie_list
+  movies-trakt-list: &movies-trakt-list
     trakt_list:
-      <<: *trakt_credentials
-      list: '{? trakt.movie_list ?}'
+      <<: *trakt-credentials
+      list: lista-pelis
       type: movies
 
-  global-settings:
-    transmission:
-      <<: *transmission
-    free_space:
-      path: /storage
-      space: 20000
-    pathscrub: windows
-    include: reject.yml
-    sort_by:
-      field: quality
-      reverse: yes
+  trakt-lookup:
     trakt_lookup:
-      <<: *trakt_credentials
-    if:
-      - trakt_watched: reject
+      <<: *trakt-credentials
 
+  # exclude torrents with undesirable files
   content-rejects:
     content_filter:
       reject:
@@ -66,32 +84,49 @@ templates:
         - '*.wmv'
         - '*.avi'
 
-  tv-settings:
-    <<: *tv_lookup
-    content_size:
-      max: 10000
-      min: 500
-    configure_series:
-      from:
-        <<: *trakt_tv_list
-      settings:
-        quality: 1080p hdtv+
-        propers: 2 days
-        identified_by: ep
+  # Settings for all series-related file system tasks
+  series-copy:
+    all_series:
+      parse_only: yes
 
-  movie-settings:
-    <<: *movie_lookup
-    proper_movies: no
-    content_size:
-      min: 8000
-      max: 80000
-      strict: no
-    quality: 1080p+ webdl+
-    list_match:
-      from:
-        - movie_list: pelis
+  # Settings for all file system tasks
+  fs-task:
+    accept_all: yes
+    seen: local
+    no_entries_ok: yes
+
+  # Clean up series names for consistency when copying
+  clean-series_name:
+    manipulate:
+      - series_name:
+          phase: filter
+          replace:
+            regexp: "['\\.,!]+" # remove punctuation
+            format: ""
+
+schedules:
+  - tasks: ['series-trakt-set-begin', 'series-discover', 'series-trakt-clean', 'movies-trakt-list', 'movies-discover', 'movies-trakt-clean']
+    interval:
+      hours: 1
+  - tasks: ['series-file-copy', 'series-file-decompress', 'series-file-move-temp', 'movies-file-decompress', 'movies-file-copy']
+    interval:
+      minutes: 10
+  #- tasks: 'transmission-clean'
+  #  interval:
+  #    minutes: 30
+
+web_server:
+  bind: 127.0.0.1
+  port: 5050
 
 tasks:
+
+  ####################
+  # TV tasks
+  ####################
+
+  # Get the next episode from Trakt and set it as the beginning for the series plugin
+  # I use Plex-Trakt-Scrobbler to sync what I've collected
   series-trakt-set-begin:
     priority: 1
     list_clear:
@@ -99,10 +134,10 @@ tasks:
         - entry_list: trakt-shows
       phase: start
     next_trakt_episodes:
-      <<: *trakt_credentials
+      <<: *trakt-credentials
       list: lista-series
       strip_dates: yes
-      context: watched
+      context: collected
       position: next
     accept_all: yes
     set_series_begin: yes
@@ -112,6 +147,8 @@ tasks:
     list_add:
       - entry_list: trakt-shows
 
+
+  # Discover series and add them to Transmission
   series-discover:
     priority: 100
     template: content-rejects
@@ -125,6 +162,7 @@ tasks:
     discover:
       what:
         - next_series_episodes: yes
+      interval: 30 minutes
       from:
         - search_rss:
             url: https://eztv.ag/ezrss.xml
@@ -138,17 +176,84 @@ tasks:
             category: video
             sort_by: leechers
             url: https://piratebaymirror.eu
-      interval: 30 minutes
+    transmission:
+      <<: *transmission
+      ratio: 5
+      path: '/downloads/tv/'
 
-  search-movies:
-    priority: 20
-    template:
-      - global-settings
-      - movie-settings
+  # Extract then move archive contents separately. Workaround because the people who
+  # post DC shows on iptorrents like to make "jokes" with their file names
+  series-file-decompress:
+    priority: 103
+    template: fs-task
+    filesystem:
+      <<: *fs-base-tv
+      <<: *archive-regex
+    archives: yes
+    decompress:
+      keep_dirs: no
+      <<: *tv-temp-path
+      <<: *video-regex
+
+  series-file-move-temp:
+    priority: 104
+    template: [series-copy, fs-task, clean-series_name]
+    filesystem:
+      <<: *fs-base-tv-temp
+    move:
+      <<: *series-path
+
+  series-file-copy:
+    priority: 104
+    template: [series-copy, fs-task, clean-series_name]
+    filesystem:
+      <<: *fs-base-tv
+      <<: *video-regex
+    <<: *fs-rejects
+    copy:
+      <<: *series-path
+
+  # Remove discontinued series from Trakt
+  series-trakt-clean:
+    priority: 107
+    template: series-trakt-list
+    disable: seen
+    if:
+      - trakt_collected and (trakt_series_status in ('ended', 'cancelled')): accept
+    list_remove:
+      - <<: *series-trakt-list
+
+  ####################
+  # Movie tasks
+  ####################
+
+  # Get movies from my queue and add them to my FlexGet movie list
+  movies-trakt-list:
+    priority: 108
+    list_clear:
+      what:
+        - entry_list: movie-queue
+      phase: start
+    template: movies-trakt-list
+    no_entries_ok: yes
+    accept_all: yes
+    list_add:
+      - movie_list: 'movie-queue'
+
+  # discover movies from movie-queue and add them to transmission
+  movies-discover:
+    priority: 109
+    template: [trakt-lookup, content-rejects]
+    no_entries_ok: yes
     discover:
       what:
-        - movie_list: pelis
+        - movie_list: 'movie-queue'
       from:
+        - search_rss:
+            url: https://eztv.ag/ezrss.xml
+            other_fields: ['torrent:magnetURI']
+            link: 'torrent:magnetURI'
+            escape: yes
         - rarbg:
             category:
               - x264 1080p
@@ -156,147 +261,66 @@ tasks:
             category: video
             sort_by: leechers
             url: https://piratebaymirror.eu
-      interval: 6 hours
+    seen_movies:
+      scope: local
+      matching: strict
+    content_size:
+      min: 1024
+      max: 10000
+    quality: 1080p+ bluray
+    accept_all: yes
+    transmission:
+      <<: *transmission
+      ratio: 5
+      path: '/downloads/movies/'
 
-  get-subtitles:
-    priority: 1
+  # Copy or decompress movies
+  movies-file-decompress:
+    priority: 103
+    template: [fs-task]
     filesystem:
-      path:
-        - /data/complete         # unix
-      regexp: '.*\.(avi|mkv|mp4)$'  # only include filenames with these extensions
-      recursive: yes
-    accept_all: yes
-    seen: local                     # seen shouldn't interfer with anything outside this subtitles task
-    subliminal:
-      languages:
-        - eng
-        - spa
-      alternatives:
-        - fre
-        - ger
-      exact_match: yes
-      #only use the following providers
-      providers: [opensubtitles]
-      single: no
-      hearing_impaired: yes
-      authentication:               #consider using the variables plugin
-        opensubtitles:
-          <<: *opensubtitles_credentials
-  trakt-update-movie-queue:
-    priority: 10
-    <<: *movie_lookup
-    template: trakt_movie_list
-    accept_all: yes
-    list_add:
-      - movie_list: "{? trakt.movie_list ?}"
-    no_entries_ok: yes
-    seen: local
+      <<: *fs-base-movies
+      <<: *archive-regex
+    archives: yes
+    decompress:
+      keep_dirs: no
+      <<: *movies-path
+      <<: *video-regex
 
-  trakt-fill-tv-list:
-    priority: 20
-    trakt_list:
-      <<: *trakt_credentials
-      list: "{? trakt.tv_list ?}"
-      type: episodes
-      strip_dates: yes
-    accept_all: yes
-    set_series_begin: yes
-    list_remove:
-      - trakt_list:
-          <<: *trakt_credentials
-          list: "{? trakt.tv_list ?}"
-          type: episodes
-    list_add:
-      - trakt_list:
-          <<: *trakt_credentials
-          list: "{? trakt.tv_list ?}"
-          type: shows
-    no_entries_ok: yes
-    seen: local
+  movies-file-copy:
+    priority: 106
+    template: [fs-task]
+    filesystem:
+      <<: *fs-base-movies
+      <<: *video-regex
+    <<: *fs-rejects
+    copy:
+      <<: *movies-path
 
-  trakt-cleanup-tv-list:
-    priority: 30
-    template: trakt_tv_list
-    <<: *tv_lookup
-    disable: seen
-    if:
-      - trakt_series_status in ['ended', 'canceled']: accept
-    list_remove:
-      - <<: *trakt_tv_list
-    no_entries_ok: yes
-
-  trakt-cleanup-movie-list:
-    priority: 30
-    trakt_lookup:
-      <<: *trakt_credentials
-    template: trakt_movie_list
-    disable: seen
+  # Remove downloaded movies from Trakt movie queue
+  movies-trakt-clean:
+    priority: 110
+    template: [trakt-lookup, movies-trakt-list]
+    disable: [seen, seen_movies]
     if:
       - trakt_collected: accept
     list_remove:
-      - <<: *trakt_movie_list
-    no_entries_ok: yes
+      - movie_list: 'movie-queue'
+      - <<: *movies-trakt-list
 
-  cleanup-torrents:
-    priority: 40
-    from_transmission:
-      <<: *transmission
-    disable: [seen, seen_info_hash]
-    if:
-      - transmission_progress == 100: accept
-      - "transmission_ratio < 1.0 and transmission_date_done > now - timedelta(days=15)": reject
-    transmission:
-      <<: *transmission
-      action: purge
-    no_entries_ok: yes
-
-  sort-tv:
-    priority: 2
-    no_entries_ok: yes
-    parsing:
-      series: guessit
-    filesystem:
-      path: /data/complete
-      regexp: '.*\.(avi|mkv|mp4)$'
-      recursive: yes
-    accept_all: yes
-    thetvdb_lookup: yes
-    require_field: series_name
-    all_series:
-      parse_only: yes
-    exec:
-      auto_escape: yes
-      on_output:
-        for_entries: |
-          if mediainfo "{{ location }}" | grep EAC3; then
-            mkdir -p "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}" && ffmpeg -hwaccel auto -y -i "{{ location }}" -map 0 -c:s copy -c:v copy -c:a ac3 -b:a 640k "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
-          else
-            mkdir -p "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}" && cp "{{ location }}" "/storage/Series/{{ tvdb_series_name }}/Season {{ series_season }}/{{ tvdb_series_name }} - {{ series_id }}{{ location | pathext }}"
-          fi
-  sort-movies:
-    priority: 2
-    no_entries_ok: yes
-    filesystem:
-      path: /data/complete
-      regexp: '.*\.(avi|mkv|mp4)$'
-      recursive: yes
-    accept_all: yes
-    require_field: movie_name
-    imdb_lookup: yes
-    exec:
-      auto_escape: yes
-      on_output:
-       for_entries: |
-         if mediainfo "{{ location }}" | grep EAC3; then
-           mkdir -p "/storage/Películas/{{ movie_name }} ({{ movie_year }})" && ffmpeg -hwaccel auto -y -i "{{ location }}" -map 0 -c:s copy -c:v copy -c:a ac3 -b:a 640k "/storage/Películas/{{ movie_name }} ({{ movie_year }})/{{ movie_name }} ({{ movie_year }}){{ location | pathext }}"
-         else
-           mkdir -p "/storage/Películas/{{ movie_name }} ({{ movie_year }})" && cp "{{ location }}" "/storage/Películas/{{ movie_name }} ({{ movie_year }})/{{ movie_name }} ({{ movie_year }}){{ location | pathext }}"
-         fi
-
-schedules:
-  - tasks: ['search-*','sort-*']
-    interval:
-      hours: 6
-  - tasks: ['trakt-*', 'cleanup-*']
-    interval:
-      hours: 12
+  ####################
+  # General maintenance
+  ####################
+#  transmission-clean:
+#    priority: 999
+#    disable: [seen, seen_info_hash]
+#    from_transmission:
+#      <<: *transmission
+#    if:
+#      - transmission_status != 'seeding': reject
+#      - transmission_secondsSeeding >= 1210000: accept
+#      - transmission_ratio >= 2: accept
+#      - transmission_downloadDir not in ['/var/lib/transmission-daemon/downloads/tv', '/var/lib/transmission-daemon/downloads/movies']: reject
+#    transmission:
+#      <<: *transmission
+#      action: purge
