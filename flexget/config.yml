@@ -137,7 +137,7 @@ tasks:
       <<: *trakt-credentials
       list: lista-series
       strip_dates: yes
-      context: collected
+      context: watched
       position: next
     accept_all: yes
     set_series_begin: yes
@@ -164,6 +164,8 @@ tasks:
         - next_series_episodes: yes
       interval: 30 minutes
       from:
+        - search_rss:
+            url: 'http://showrss.info/user/58326.rss?magnets=true&namespaces=true&name=null&quality=null&re=null'
         - search_rss:
             url: https://eztv.ag/ezrss.xml
             other_fields: ['torrent:magnetURI']
