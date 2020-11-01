@@ -18,7 +18,7 @@ templates:
       username: '{? addic7ed.username ?}'
       password: '{? addic7ed.password ?}'
 
-    _opensubtitles: &addic7ed_credentials
+    _opensubtitles: &opensubtitles_credentials
       username: '{? opensubtitles.username ?}'
       password: '{? opensubtitles.password ?}'
 
