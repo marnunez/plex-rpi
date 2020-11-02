@@ -8,7 +8,6 @@ services:
       - PUID=1001
       - PGID=1001
       - TZ=America/Argentina/Buenos_Aires
-      - CONTEXT_PATH=url-base
     volumes:
       - ./booksonic:/config
       - ${MEDIA}/Audiolibros:/audiobooks
