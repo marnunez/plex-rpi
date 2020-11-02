@@ -1,6 +1,21 @@
 version: "2"
 
 services:
+  booksonic:
+    image: linuxserver/booksonic
+    container_name: booksonic
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=America/Argentina/Buenos_Aires
+      - CONTEXT_PATH=url-base
+    volumes:
+      - ./booksonic:/config
+      - ${MEDIA}/Audiolibros:/audiobooks
+      - ${MEDIA}/Podcasts:/podcasts
+    ports:
+      - 4040:4040
+    restart: unless-stopped
 
   samba:
     image: dperson/samba:rpi
